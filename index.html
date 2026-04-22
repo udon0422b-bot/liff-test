@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIFF userId確認</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f7f8fb;
+      margin: 0;
+      padding: 24px;
+      color: #333;
+    }
+    .card {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 28px;
+      margin-top: 0;
+    }
+    .row {
+      margin: 14px 0;
+      line-height: 1.8;
+      word-break: break-all;
+    }
+    .label {
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>LIFF userId確認</h1>
+    <div class="row" id="status">初期化中...</div>
+    <div class="row"><span class="label">displayName:</span> <span id="displayName">未取得</span></div>
+    <div class="row"><span class="label">userId:</span> <span id="userId">未取得</span></div>
+    <div class="row"><span class="label">isInClient:</span> <span id="isInClient">未取得</span></div>
+    <div class="row"><span class="label">isLoggedIn:</span> <span id="isLoggedIn">未取得</span></div>
+  </div>
+
+  <script>
+    const LIFF_ID = '2009639720-bL5JEi3T';
+
+    async function main() {
+      const statusEl = document.getElementById('status');
+      const displayNameEl = document.getElementById('displayName');
+      const userIdEl = document.getElementById('userId');
+      const isInClientEl = document.getElementById('isInClient');
+      const isLoggedInEl = document.getElementById('isLoggedIn');
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        isInClientEl.textContent = String(liff.isInClient());
+        isLoggedInEl.textContent = String(liff.isLoggedIn());
+
+        if (!liff.isLoggedIn()) {
+          statusEl.textContent = '未ログインのためログインへ進みます...';
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+
+        const profile = await liff.getProfile();
+
+        displayNameEl.textContent = profile.displayName || '未取得';
+        userIdEl.textContent = profile.userId || '未取得';
+        statusEl.textContent = '取得できました。';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'エラーが発生しました: ' + (err?.message || String(err));
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
