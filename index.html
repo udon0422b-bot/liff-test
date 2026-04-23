@@ -236,28 +236,16 @@
         source: 'vercel'
       };
 
-      const response = await fetch(GAS_WEB_APP_URL, {
+      await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'text/plain;charset=utf-8'
         },
         body: JSON.stringify(payload)
       });
 
-      const text = await response.text();
-
-      let result = {};
-      try {
-        result = JSON.parse(text);
-      } catch (error) {
-        throw new Error('GASからの応答をJSONとして読めませんでした: ' + text);
-      }
-
-      if (!result.success) {
-        throw new Error(result.message || '保存に失敗しました');
-      }
-
-      return result;
+      return { success: true };
     }
 
     function renderStartScreen() {
