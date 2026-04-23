@@ -227,36 +227,44 @@
       }
     }
 
-    async function saveLineTestDataToGas(studentId) {
-      const params = new URLSearchParams({
+    function submitLineTestDataToGas(studentId) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = GAS_WEB_APP_URL;
+      form.target = 'hiddenGasTarget';
+      form.style.display = 'none';
+
+      const fields = {
         mode: 'line_test_save',
         lineUserId: window.currentLineUserId || '',
         displayName: window.currentLineDisplayName || '',
         studentId: studentId || '',
-        source: 'vercel_get'
+        source: 'vercel_form'
+      };
+
+      Object.keys(fields).forEach(function(key) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = fields[key];
+        form.appendChild(input);
       });
 
-      const url = GAS_WEB_APP_URL + '?' + params.toString();
-
-      const response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors'
-      });
-
-      const text = await response.text();
-
-      let result = {};
-      try {
-        result = JSON.parse(text);
-      } catch (error) {
-        throw new Error('GASからの応答をJSONとして読めませんでした: ' + text);
+      let iframe = document.getElementById('hiddenGasTarget');
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = 'hiddenGasTarget';
+        iframe.id = 'hiddenGasTarget';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
       }
 
-      if (!result.success) {
-        throw new Error(result.message || '保存に失敗しました');
-      }
+      document.body.appendChild(form);
+      form.submit();
 
-      return result;
+      setTimeout(function() {
+        form.remove();
+      }, 1000);
     }
 
     function renderStartScreen() {
@@ -324,44 +332,47 @@
         '</div>';
     }
 
-      async function saveAndShowTemporaryNextScreen() {
-        const studentIdInput = document.getElementById('studentId');
-        const errorEl = document.getElementById('errorMessage');
-        const buttonEl = document.getElementById('studentNextButton');
+    function saveAndShowTemporaryNextScreen() {
+      const studentIdInput = document.getElementById('studentId');
+      const errorEl = document.getElementById('errorMessage');
+      const buttonEl = document.getElementById('studentNextButton');
 
-        const studentId = studentIdInput ? studentIdInput.value.trim() : '';
+      const studentId = studentIdInput ? studentIdInput.value.trim() : '';
 
+      if (errorEl) {
+        errorEl.textContent = '';
+      }
+
+      if (!window.currentLineUserId) {
         if (errorEl) {
-          errorEl.textContent = '';
+          errorEl.textContent = 'lineUserId が取得できていません。LINEから開き直してください。';
         }
+        return;
+      }
 
-        if (!window.currentLineUserId) {
-          if (errorEl) {
-            errorEl.textContent = 'lineUserId が取得できていません。LINEから開き直してください。';
-          }
-          return;
-        }
+      if (buttonEl) {
+        buttonEl.disabled = true;
+        buttonEl.textContent = '保存しています…';
+      }
 
-        if (buttonEl) {
-          buttonEl.disabled = true;
-          buttonEl.textContent = '保存しています…';
-        }
+      try {
+        submitLineTestDataToGas(studentId);
 
-        try {
-          await saveLineTestDataToGas(studentId);
+        setTimeout(function() {
           showTemporaryNextScreen();
-        } catch (error) {
-          console.error(error);
-          if (errorEl) {
-            errorEl.textContent = '保存に失敗しました: ' + (error.message || String(error));
-          }
-        } finally {
-          if (buttonEl) {
-            buttonEl.disabled = false;
-            buttonEl.textContent = '次へ進む';
-          }
+        }, 800);
+
+      } catch (error) {
+        console.error(error);
+        if (errorEl) {
+          errorEl.textContent = '保存に失敗しました: ' + (error.message || String(error));
         }
-      }           
+        if (buttonEl) {
+          buttonEl.disabled = false;
+          buttonEl.textContent = '次へ進む';
+        }
+      }
+    }        
 
     function showTemporaryNextScreen() {
       const studentId = document.getElementById('studentId')
