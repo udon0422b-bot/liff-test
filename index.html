@@ -3,82 +3,332 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LIFF userId確認</title>
+  <title>研究用アンケート</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
-      font-family: sans-serif;
-      background: #f7f8fb;
       margin: 0;
-      padding: 24px;
+      font-family: sans-serif;
+      background: #f5f7fb;
       color: #333;
     }
-    .card {
-      max-width: 720px;
+
+    .container {
+      width: 100%;
+      min-height: 100vh;
       margin: 0 auto;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .card {
+      width: 96vw;
+      min-height: 92vh;
       background: #fff;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 28px 22px 34px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+      margin: 8px auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
+
     h1 {
-      font-size: 28px;
+      font-size: 40px;
       margin-top: 0;
+      margin-bottom: 18px;
+      line-height: 1.25;
+      word-break: keep-all;
     }
-    .row {
-      margin: 14px 0;
+
+    p {
+      line-height: 1.9;
+      margin-bottom: 24px;
+      font-size: 24px;
+      word-break: break-word;
+    }
+
+    .lead-box {
+      background: #f8fbff;
+      border-radius: 14px;
+      padding: 18px 16px;
+      margin-bottom: 24px;
+    }
+
+    .lead-box p {
+      margin: 0;
+    }
+
+    .subtext {
+      font-size: 18px;
+      color: #666;
+      line-height: 1.9;
+    }
+
+    .debug-box {
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .debug-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .debug-line {
+      font-size: 16px;
+      color: #666;
       line-height: 1.8;
+      margin-bottom: 4px;
       word-break: break-all;
     }
-    .label {
+
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: bold;
+      font-size: 22px;
+    }
+
+    .input-group input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 18px 16px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 22px;
+      font-family: sans-serif;
+      background: #fff;
+    }
+
+    button {
+      width: 82%;
+      min-height: 86px;
+      padding: 24px 18px;
+      border: none;
+      border-radius: 16px;
+      background: #4f7cff;
+      color: white;
+      font-size: 24px;
       font-weight: 700;
+      cursor: pointer;
+      margin: 10px auto 28px;
+      box-sizing: border-box;
+      line-height: 1.5;
+      display: block;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: default;
+    }
+
+    .secondary-button {
+      background: #6b7280;
+    }
+
+    .error {
+      color: #d93025;
+      margin-top: 12px;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        width: 760px;
+        min-height: 88vh;
+        padding: 32px 28px 36px;
+        margin: 16px auto;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      p {
+        font-size: 22px;
+      }
+
+      .subtext,
+      .debug-line,
+      .error {
+        font-size: 16px;
+      }
+
+      .input-group label {
+        font-size: 20px;
+      }
+
+      .input-group input {
+        font-size: 20px;
+        padding: 16px 16px;
+      }
+
+      button {
+        width: 78%;
+        min-height: 78px;
+        font-size: 22px;
+        padding: 20px 18px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>LIFF userId確認</h1>
-    <div class="row" id="status">初期化中...</div>
-    <div class="row"><span class="label">displayName:</span> <span id="displayName">未取得</span></div>
-    <div class="row"><span class="label">userId:</span> <span id="userId">未取得</span></div>
-    <div class="row"><span class="label">isInClient:</span> <span id="isInClient">未取得</span></div>
-    <div class="row"><span class="label">isLoggedIn:</span> <span id="isLoggedIn">未取得</span></div>
+  <div class="container">
+    <div id="app"></div>
   </div>
 
   <script>
     const LIFF_ID = '2009639720-bL5JEi3T';
 
-    async function main() {
-      const statusEl = document.getElementById('status');
-      const displayNameEl = document.getElementById('displayName');
-      const userIdEl = document.getElementById('userId');
-      const isInClientEl = document.getElementById('isInClient');
-      const isLoggedInEl = document.getElementById('isLoggedIn');
+    window.currentLineUserId = '';
+    window.currentLineDisplayName = '';
 
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function initLiffAndProfile() {
       try {
         await liff.init({ liffId: LIFF_ID });
 
-        isInClientEl.textContent = String(liff.isInClient());
-        isLoggedInEl.textContent = String(liff.isLoggedIn());
-
         if (!liff.isLoggedIn()) {
-          statusEl.textContent = '未ログインのためログインへ進みます...';
           liff.login({ redirectUri: window.location.href });
-          return;
+          return false;
         }
 
         const profile = await liff.getProfile();
+        window.currentLineUserId = profile && profile.userId ? profile.userId : '';
+        window.currentLineDisplayName = profile && profile.displayName ? profile.displayName : '';
+        return true;
 
-        displayNameEl.textContent = profile.displayName || '未取得';
-        userIdEl.textContent = profile.userId || '未取得';
-        statusEl.textContent = '取得できました。';
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'エラーが発生しました: ' + (err?.message || String(err));
+      } catch (error) {
+        console.error('LIFF init/profile error:', error);
+        return false;
       }
     }
 
-    main();
+    function renderStartScreen() {
+      const app = document.getElementById('app');
+      app.innerHTML =
+        '<div class="card">' +
+          '<h1>アンケートへのご協力のお願い</h1>' +
+          '<div class="lead-box">' +
+            '<p>本アンケートは、大学生・大学院生を対象に、特性やストレスと糖尿病予防行動との関係を調べるためのものです。</p>' +
+          '</div>' +
+          '<p><strong>回答時間は約10分です。</strong><br>1問ずつ表示されますので、あてはまるものを選んで進んでください。</p>' +
+
+          '<div class="debug-box">' +
+            '<div class="debug-title">LINE取得確認</div>' +
+            '<div class="debug-line">displayName: ' + escapeHtml(window.currentLineDisplayName || '未取得') + '</div>' +
+            '<div class="debug-line">userId: ' + escapeHtml(window.currentLineUserId || '未取得') + '</div>' +
+            '<div class="debug-line">isInClient: ' + (window.liff ? String(liff.isInClient()) : 'false') + '</div>' +
+            '<div class="debug-line">isLoggedIn: ' + (window.liff ? String(liff.isLoggedIn()) : 'false') + '</div>' +
+          '</div>' +
+
+          '<button onclick="showConsentScreen()">回答をはじめる</button>' +
+        '</div>';
+    }
+
+    function showConsentScreen() {
+      const app = document.getElementById('app');
+      app.innerHTML =
+        '<div class="card">' +
+          '<h1>研究協力のお願い</h1>' +
+          '<div class="lead-box">' +
+            '<p>研究へのご協力ありがとうございます。内容をご確認のうえ、同意いただける場合は次へ進んでください。</p>' +
+          '</div>' +
+
+          '<div class="debug-box">' +
+            '<div class="debug-title">現在の識別情報</div>' +
+            '<div class="debug-line">displayName: ' + escapeHtml(window.currentLineDisplayName || '未取得') + '</div>' +
+            '<div class="debug-line">lineUserId: ' + escapeHtml(window.currentLineUserId || '未取得') + '</div>' +
+          '</div>' +
+
+          '<button onclick="showStudentIdScreen()">同意して進む</button>' +
+          '<button class="secondary-button" onclick="renderStartScreen()">戻る</button>' +
+        '</div>';
+    }
+
+    function showStudentIdScreen() {
+      const app = document.getElementById('app');
+      app.innerHTML =
+        '<div class="card">' +
+          '<h1>学籍番号をご入力ください</h1>' +
+          '<p class="subtext">現段階では確認のため学籍番号入力画面を残しています。後でこの画面は削除できます。</p>' +
+
+          '<div class="debug-box">' +
+            '<div class="debug-title">LINE取得確認</div>' +
+            '<div class="debug-line">表示名：' + escapeHtml(window.currentLineDisplayName || '未取得') + '</div>' +
+            '<div class="debug-line">userId：' + escapeHtml(window.currentLineUserId || '未取得') + '</div>' +
+          '</div>' +
+
+          '<div class="input-group">' +
+            '<label for="studentId">学籍番号</label>' +
+            '<input id="studentId" type="text" placeholder="例：12345678">' +
+          '</div>' +
+
+          '<button onclick="showTemporaryNextScreen()">次へ進む</button>' +
+          '<div id="errorMessage" class="error"></div>' +
+        '</div>';
+    }
+
+    function showTemporaryNextScreen() {
+      const studentId = document.getElementById('studentId')
+        ? document.getElementById('studentId').value.trim()
+        : '';
+
+      const app = document.getElementById('app');
+      app.innerHTML =
+        '<div class="card">' +
+          '<h1>確認用画面</h1>' +
+          '<div class="lead-box">' +
+            '<p>Vercel版アンケートの最小構成まで移行できています。</p>' +
+          '</div>' +
+          '<div class="debug-box">' +
+            '<div class="debug-title">保持中の値</div>' +
+            '<div class="debug-line">学籍番号: ' + escapeHtml(studentId || '未入力') + '</div>' +
+            '<div class="debug-line">displayName: ' + escapeHtml(window.currentLineDisplayName || '未取得') + '</div>' +
+            '<div class="debug-line">lineUserId: ' + escapeHtml(window.currentLineUserId || '未取得') + '</div>' +
+          '</div>' +
+          '<p class="subtext">次は、この `lineUserId` を使って GAS に保存する処理へ進みます。</p>' +
+          '<button onclick="renderStartScreen()">最初に戻る</button>' +
+        '</div>';
+    }
+
+    window.addEventListener('DOMContentLoaded', async function() {
+      const ok = await initLiffAndProfile();
+
+      if (!ok && !window.currentLineUserId) {
+        const app = document.getElementById('app');
+        app.innerHTML =
+          '<div class="card">' +
+            '<h1>LIFFの初期化に失敗しました</h1>' +
+            '<p class="subtext">LINEからもう一度開き直してください。</p>' +
+          '</div>';
+        return;
+      }
+
+      renderStartScreen();
+    });
   </script>
 </body>
 </html>
