@@ -193,6 +193,7 @@
 
   <script>
     const LIFF_ID = '2009639720-bL5JEi3T';
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyMsqu2tyspSYFSAjtOdRvSbDJouMw1wDeBGA_RZdc1-QEngbM0VKVpljSzanPIdG4Ecw/exec';
 
     window.currentLineUserId = '';
     window.currentLineDisplayName = '';
@@ -224,6 +225,39 @@
         console.error('LIFF init/profile error:', error);
         return false;
       }
+    }
+
+    async function saveLineTestDataToGas(studentId) {
+      const payload = {
+        mode: 'line_test_save',
+        lineUserId: window.currentLineUserId || '',
+        displayName: window.currentLineDisplayName || '',
+        studentId: studentId || '',
+        source: 'vercel'
+      };
+
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await response.text();
+
+      let result = {};
+      try {
+        result = JSON.parse(text);
+      } catch (error) {
+        throw new Error('GASからの応答をJSONとして読めませんでした: ' + text);
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || '保存に失敗しました');
+      }
+
+      return result;
     }
 
     function renderStartScreen() {
@@ -286,10 +320,49 @@
             '<input id="studentId" type="text" placeholder="例：12345678">' +
           '</div>' +
 
-          '<button onclick="showTemporaryNextScreen()">次へ進む</button>' +
+          '<button id="studentNextButton" onclick="saveAndShowTemporaryNextScreen()">次へ進む</button>' +
           '<div id="errorMessage" class="error"></div>' +
         '</div>';
     }
+
+      async function saveAndShowTemporaryNextScreen() {
+        const studentIdInput = document.getElementById('studentId');
+        const errorEl = document.getElementById('errorMessage');
+        const buttonEl = document.getElementById('studentNextButton');
+
+        const studentId = studentIdInput ? studentIdInput.value.trim() : '';
+
+        if (errorEl) {
+          errorEl.textContent = '';
+        }
+
+        if (!window.currentLineUserId) {
+          if (errorEl) {
+            errorEl.textContent = 'lineUserId が取得できていません。LINEから開き直してください。';
+          }
+          return;
+        }
+
+        if (buttonEl) {
+          buttonEl.disabled = true;
+          buttonEl.textContent = '保存しています…';
+        }
+
+        try {
+          await saveLineTestDataToGas(studentId);
+          showTemporaryNextScreen();
+        } catch (error) {
+          console.error(error);
+          if (errorEl) {
+            errorEl.textContent = '保存に失敗しました: ' + (error.message || String(error));
+          }
+        } finally {
+          if (buttonEl) {
+            buttonEl.disabled = false;
+            buttonEl.textContent = '次へ進む';
+          }
+        }
+      }           
 
     function showTemporaryNextScreen() {
       const studentId = document.getElementById('studentId')
